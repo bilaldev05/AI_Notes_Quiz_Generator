@@ -1,22 +1,21 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import os
+import re
 from pptx import Presentation
 from transformers import pipeline
 import pdfplumber
 
+# ------------------ APP INIT ------------------
 app = FastAPI()
 
-# ------------------ CORS CONFIG ------------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-# ------------------------------------------------
-
 
 # ------------------ AI MODELS ------------------
 summarizer = pipeline(
@@ -24,53 +23,104 @@ summarizer = pipeline(
     model="facebook/bart-large-cnn"
 )
 
-def generate_summary(text):
-    return summarizer(
-        text[:1024],
-        max_length=150,
-        min_length=60,
-        do_sample=False
-    )[0]["summary_text"]
-
-def generate_bullets(summary):
-    return summary.split(". ")
-
-quiz_generator = pipeline(
+text_generator = pipeline(
     "text2text-generation",
     model="google/flan-t5-base"
 )
 
-def generate_quiz(text):
-    prompt = f"""
-    Create 5 MCQ questions from the following text:
-    {text}
-    """
-    return quiz_generator(prompt, max_length=512)[0]["generated_text"]
-# ------------------------------------------------
-
-
-# ------------------ FILE HANDLING ------------------
+# ------------------ UTILS ------------------
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def extract_pdf_text(path):
+def clean_text(text: str) -> str:
+    text = re.sub(r'\n+', '\n', text)
+    text = re.sub(r'\s+', ' ', text)
+    text = text.replace('\x00', '')
+    return text.strip()
+
+def chunk_text(text: str, max_words: int = 350):
+    words = text.split()
+    return [
+        " ".join(words[i:i + max_words])
+        for i in range(0, len(words), max_words)
+    ]
+
+# ------------------ FILE EXTRACTION ------------------
+def extract_pdf_text(path: str) -> str:
     text = ""
     with pdfplumber.open(path) as pdf:
         for page in pdf.pages:
-            if page.extract_text():
-                text += page.extract_text() + "\n"
-    return text
+            page_text = page.extract_text(x_tolerance=2)
+            if page_text:
+                text += page_text + "\n"
+    return clean_text(text)
 
-def extract_ppt_text(path):
+def extract_ppt_text(path: str) -> str:
     prs = Presentation(path)
     text = ""
     for slide in prs.slides:
         for shape in slide.shapes:
             if hasattr(shape, "text"):
                 text += shape.text + "\n"
-    return text
-# --------------------------------------------------
+    return clean_text(text)
 
+# ------------------ AI LOGIC ------------------
+def generate_summary(text: str) -> str:
+    chunks = chunk_text(text)
+    summaries = []
+
+    for chunk in chunks:
+        result = summarizer(
+            chunk,
+            max_length=130,
+            min_length=60,
+            do_sample=False
+        )[0]["summary_text"]
+        summaries.append(result)
+
+    return " ".join(summaries)
+
+def generate_notes(text: str) -> str:
+    prompt = f"""
+    You are an expert academic tutor.
+
+    Convert the following content into:
+    - Clear and concise study notes
+    - Bullet points
+    - Key concepts only
+    - Easy for exams and revision
+
+    Content:
+    {text}
+    """
+
+    result = text_generator(
+        prompt,
+        max_length=512,
+        do_sample=False
+    )[0]["generated_text"]
+
+    return result
+
+def generate_quiz(text: str) -> str:
+    prompt = f"""
+    Create 5 high-quality multiple choice questions from the text.
+    Each question should include:
+    - Question
+    - 4 options
+    - Correct answer
+
+    Text:
+    {text}
+    """
+
+    result = text_generator(
+        prompt,
+        max_length=512,
+        do_sample=False
+    )[0]["generated_text"]
+
+    return result
 
 # ------------------ API ENDPOINTS ------------------
 @app.post("/upload")
@@ -90,18 +140,19 @@ async def process_file(file: UploadFile = File(...)):
     with open(path, "wb") as f:
         f.write(await file.read())
 
-    if file.filename.endswith(".pdf"):
-        text = extract_pdf_text(path)
+    if file.filename.lower().endswith(".pdf"):
+        raw_text = extract_pdf_text(path)
     else:
-        text = extract_ppt_text(path)
+        raw_text = extract_ppt_text(path)
 
-    summary = generate_summary(text)
-    bullets = generate_bullets(summary)
-    quiz = generate_quiz(text)
+    summary = generate_summary(raw_text)
+    notes = generate_notes(summary)
+    quiz = generate_quiz(summary)
 
     return {
         "summary": summary,
-        "bullets": bullets,
+        "notes": notes,
         "quiz": quiz
     }
-# --------------------------------------------------
+
+# py -m uvicorn main:app --reload
