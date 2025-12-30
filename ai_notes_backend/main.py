@@ -17,7 +17,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ------------------ AI MODELS ------------------
+
 summarizer = pipeline(
     "summarization",
     model="facebook/bart-large-cnn"
