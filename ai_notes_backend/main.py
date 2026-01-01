@@ -6,7 +6,7 @@ from pptx import Presentation
 from transformers import pipeline
 import pdfplumber
 
-# ------------------ APP INIT ------------------
+
 app = FastAPI()
 
 app.add_middleware(
