@@ -28,7 +28,7 @@ text_generator = pipeline(
     model="google/flan-t5-base"
 )
 
-# ------------------ UTILS ------------------
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
