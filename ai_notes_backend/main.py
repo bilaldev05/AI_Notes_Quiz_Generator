@@ -1,8 +1,11 @@
+import json
+from typing import List
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import re
 from pptx import Presentation
+from pydantic import BaseModel
 from transformers import pipeline
 import pdfplumber
 
@@ -17,6 +20,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
+class MCQ(BaseModel):
+    question: str
+    options: List[str]
+    correctIndex: int
 
 summarizer = pipeline(
     "summarization",
@@ -102,25 +111,88 @@ def generate_notes(text: str) -> str:
 
     return result
 
-def generate_quiz(text: str) -> str:
+def generate_quiz(text: str):
     prompt = f"""
-    Create 5 high-quality multiple choice questions from the text.
-    Each question should include:
-    - Question
-    - 4 options
-    - Correct answer
+Create 5 multiple choice questions.
 
-    Text:
-    {text}
-    """
+Format:
+Q: question
+A) option
+B) option
+C) option
+D) option
+ANSWER: A
 
-    result = text_generator(
+Text:
+{text[:1200]}
+"""
+
+    output = text_generator(
         prompt,
-        max_length=512,
+        max_new_tokens=400,
         do_sample=False
     )[0]["generated_text"]
 
-    return result
+    print("\n===== RAW QUIZ OUTPUT =====\n")
+    print(output)
+    print("\n===========================\n")
+
+    return parse_mcq_text(output)
+
+
+
+def parse_mcq_text(raw: str):
+    questions = []
+
+    blocks = re.split(r"\n\s*Q[:\-]\s*", raw, flags=re.IGNORECASE)
+
+    for block in blocks:
+        if not block.strip():
+            continue
+
+        lines = [l.strip() for l in block.splitlines() if l.strip()]
+
+        try:
+            question = lines[0]
+
+            option_lines = [l for l in lines if re.match(r"^[A-Da-d][\).]", l)]
+            if len(option_lines) < 4:
+                continue
+
+            options = [
+                re.sub(r"^[A-Da-d][\).]\s*", "", opt)
+                for opt in option_lines[:4]
+            ]
+
+            answer_line = next(
+                (l for l in lines if "answer" in l.lower()), None
+            )
+            if not answer_line:
+                continue
+
+            letter = re.search(r"[A-Da-d]", answer_line).group().upper()
+            correct_index = ord(letter) - ord("A")
+
+            questions.append({
+                "question": question,
+                "options": options,
+                "correctIndex": correct_index
+            })
+
+        except Exception as e:
+            print("MCQ PARSE ERROR:", e)
+
+    return questions
+
+
+    # ---------- SAFE JSON EXTRACTION ----------
+    try:
+        json_text = re.search(r"\[.*\]", result, re.S).group()
+        quiz = json.loads(json_text)
+        return quiz
+    except Exception as e:
+        print("Quiz parsing error:", e)
+        return []
 
 # ------------------ API ENDPOINTS ------------------
 @app.post("/upload")
@@ -149,10 +221,15 @@ async def process_file(file: UploadFile = File(...)):
     notes = generate_notes(summary)
     quiz = generate_quiz(summary)
 
+    print("QUIZ COUNT:", len(quiz))  # 🔍 DEBUG
+
     return {
         "summary": summary,
         "notes": notes,
         "quiz": quiz
     }
+
+
+
 
 # py -m uvicorn main:app --reload

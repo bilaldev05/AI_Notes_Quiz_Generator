@@ -1,5 +1,7 @@
+import 'package:ai_notes_frontend/screens/quiz_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/notes_response.dart';
+import '../models/mcq.dart';
 
 class ResultScreen extends StatelessWidget {
   final NotesResponse result;
@@ -9,7 +11,7 @@ class ResultScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Study Notes")),
+      appBar: AppBar(title: const Text("Study Material")),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -23,33 +25,38 @@ class ResultScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(result.summary),
-            const Divider(),
+            const Divider(height: 32),
 
-            /// BULLETS
+            /// NOTES
             const Text(
-              "📝 Key Points",
+              "📝 Study Notes",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            ...result.bullets.map(
-              (e) => ListTile(
-                leading: const Icon(Icons.check_circle_outline),
-                title: Text(e),
-              ),
-            ),
-            const Divider(),
+            Text(result.notes),
+            const Divider(height: 32),
 
-            /// QUIZ
-            const Text(
-              "❓ Quiz",
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            /// QUIZ BUTTON
+            ElevatedButton(
+              onPressed: result.quiz.isEmpty
+                  ? null
+                  : () {
+                      final mcqs = result.quiz
+                          .map((e) => MCQ.fromJson(e))
+                          .toList();
+
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => QuizScreen(mcqs: mcqs),
+                        ),
+                      );
+                    },
+              child: const Text("Start Quiz"),
             ),
-            const SizedBox(height: 8),
-            Text(result.quiz),
           ],
         ),
       ),
     );
   }
 }
- 

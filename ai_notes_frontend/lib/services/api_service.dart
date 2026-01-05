@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:ai_notes_frontend/models/mcq.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../models/notes_response.dart';
@@ -45,4 +46,26 @@ class ApiService {
       throw Exception("Failed to process file");
     }
   }
+  Future<List<MCQ>> fetchQuiz(File file) async {
+  final request = http.MultipartRequest(
+    'POST',
+    Uri.parse('$baseUrl/process'),
+  );
+
+  request.files.add(
+    await http.MultipartFile.fromPath('file', file.path),
+  );
+
+  final response = await request.send();
+  final responseBody = await response.stream.bytesToString();
+  final data = jsonDecode(responseBody);
+
+  // 🔥 FIX IS HERE
+  final List quizList = data['quiz'] as List;
+
+  return quizList
+      .map((q) => MCQ.fromJson(q as Map<String, dynamic>))
+      .toList();
+}
+
 }
