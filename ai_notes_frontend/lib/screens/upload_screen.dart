@@ -23,7 +23,7 @@ class _UploadScreenState extends State<UploadScreen> {
     final result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'pptx'],
-      withData: true, // 🔑 REQUIRED FOR WEB
+      withData: true, 
     );
 
     if (result != null) {

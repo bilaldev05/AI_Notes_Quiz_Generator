@@ -54,7 +54,7 @@ def chunk_text(text: str, max_words: int = 350):
         for i in range(0, len(words), max_words)
     ]
 
-# ------------------ FILE EXTRACTION ------------------
+
 def extract_pdf_text(path: str) -> str:
     text = ""
     with pdfplumber.open(path) as pdf:
