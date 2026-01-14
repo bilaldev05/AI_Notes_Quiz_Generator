@@ -73,7 +73,7 @@ def extract_ppt_text(path: str) -> str:
                 text += shape.text + "\n"
     return clean_text(text)
 
-# ------------------ AI LOGIC ------------------
+
 def generate_summary(text: str) -> str:
     chunks = chunk_text(text)
     summaries = []
