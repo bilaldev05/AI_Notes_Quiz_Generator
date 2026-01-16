@@ -185,7 +185,7 @@ def parse_mcq_text(raw: str):
     return questions
 
 
-    # ---------- SAFE JSON EXTRACTION ----------
+    
     try:
         json_text = re.search(r"\[.*\]", result, re.S).group()
         quiz = json.loads(json_text)
