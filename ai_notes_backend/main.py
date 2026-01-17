@@ -194,7 +194,7 @@ def parse_mcq_text(raw: str):
         print("Quiz parsing error:", e)
         return []
 
-# ------------------ API ENDPOINTS ------------------
+
 @app.post("/upload")
 async def upload_file(file: UploadFile = File(...)):
     path = f"{UPLOAD_DIR}/{file.filename}"
