@@ -221,7 +221,7 @@ async def process_file(file: UploadFile = File(...)):
     notes = generate_notes(summary)
     quiz = generate_quiz(summary)
 
-    print("QUIZ COUNT:", len(quiz))  # 🔍 DEBUG
+    print("QUIZ COUNT:", len(quiz))  
 
     return {
         "summary": summary,
