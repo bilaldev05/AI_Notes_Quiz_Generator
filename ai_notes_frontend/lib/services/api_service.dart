@@ -27,7 +27,7 @@ class ApiService {
         ),
       );
     } else {
-      // ✅ Mobile / Desktop
+      
       request.files.add(
         await http.MultipartFile.fromPath(
           "file",
