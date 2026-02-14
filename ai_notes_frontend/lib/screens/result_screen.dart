@@ -18,7 +18,7 @@ class ResultScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
 
-            /// SUMMARY
+            
             const Text(
               "📌 Summary",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
