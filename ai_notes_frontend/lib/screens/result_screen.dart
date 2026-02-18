@@ -27,7 +27,7 @@ class ResultScreen extends StatelessWidget {
             Text(result.summary),
             const Divider(height: 32),
 
-            /// NOTES
+            
             const Text(
               "📝 Study Notes",
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
