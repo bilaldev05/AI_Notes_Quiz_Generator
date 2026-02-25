@@ -36,7 +36,6 @@ class ResultScreen extends StatelessWidget {
             Text(result.notes),
             const Divider(height: 32),
 
-            /// QUIZ BUTTON
             ElevatedButton(
               onPressed: result.quiz.isEmpty
                   ? null
