@@ -82,7 +82,7 @@ class _UploadScreenState extends State<UploadScreen> {
             if (fileName != null)
               Text(
                 fileName!,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.red),
               ),
             const Spacer(),
             loading
