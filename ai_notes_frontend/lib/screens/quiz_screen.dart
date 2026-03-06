@@ -77,7 +77,7 @@ class _QuizScreenState extends State<QuizScreen> {
             Text(
               mcq.question,
               style: const TextStyle(
-                fontSize: 18,
+                fontSize: 20,
                 fontWeight: FontWeight.bold,
               ),
             ),
